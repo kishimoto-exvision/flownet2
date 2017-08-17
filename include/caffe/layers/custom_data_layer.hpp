@@ -84,8 +84,9 @@ class CustomDataLayer : public Layer<Dtype> {
   int datum_width_;
   int datum_size_;
 
-  //pthread_t thread_;
-  boost::thread thread_;
+#ifndef _MSC_VER
+  pthread_t thread_;
+#endif
 
   shared_ptr<Blob<Dtype> > prefetch_label_;
   //shared_ptr<Blob<Dtype> > prefetch_data_;

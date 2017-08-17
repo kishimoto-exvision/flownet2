@@ -99,9 +99,15 @@ namespace caffe {
   {
     /// Check and reset p/q parameters
     if (schedule_.size() > 0) {
-      /// Get current iteration
+
+        /// Get current iteration
+#if 0
       Net<Dtype> *net = this->GetNet();
       unsigned int current_iteration = (net) ? net->iter() : 0;
+#else
+      static unsigned int current_iteration = 0;
+      current_iteration++;
+#endif
       
       ScheduleStep_* step_ptr = 0;
       

@@ -320,7 +320,6 @@ Filler<Dtype>* GetFiller(const FillerParameter& param) {
   return (Filler<Dtype>*)(NULL);
 }
 
-
 }  // namespace caffe
 
 #endif  // CAFFE_FILLER_HPP_

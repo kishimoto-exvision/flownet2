@@ -2,8 +2,9 @@
 
 #include <stdint.h>
 #include <leveldb/db.h>
-//#include <pthread.h>
-#include <boost/thread.hpp>
+#ifndef _MSC_VER
+#include <pthread.h>
+#endif
 
 #include <string>
 #include <vector>

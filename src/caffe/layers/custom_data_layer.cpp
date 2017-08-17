@@ -653,15 +653,21 @@ void CustomDataLayer<Dtype>::CreatePrefetchThread() {
     prefetch_rng_.reset();
   }
   // Create the thread.
-  //CHECK(!pthread_create(&thread_, NULL, CustomDataLayerPrefetch<Dtype>,
-  //      static_cast<void*>(this))) << "Pthread execution failed.";
-  thread_ = boost::thread(&CustomDataLayerPrefetch<Dtype>, this);
+#ifndef _MSC_VER
+  CHECK(!pthread_create(&thread_, NULL, CustomDataLayerPrefetch<Dtype>,
+        static_cast<void*>(this))) << "Pthread execution failed.";
+#else
+  //thread_ = boost::thread(&CustomDataLayerPrefetch<Dtype>, this);
+#endif
 }
 
 template <typename Dtype>
 void CustomDataLayer<Dtype>::JoinPrefetchThread() {
-  //CHECK(!pthread_join(thread_, NULL)) << "Pthread joining failed.";
-  thread_.join();
+#ifndef _MSC_VER
+  CHECK(!pthread_join(thread_, NULL)) << "Pthread joining failed.";
+#else
+  //thread_.join();
+#endif
 }
 
 template <typename Dtype>
