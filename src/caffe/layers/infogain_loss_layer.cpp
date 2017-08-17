@@ -15,7 +15,11 @@ void InfogainLossLayer<Dtype>::LayerSetUp(
   // internal softmax layer
   LayerParameter softmax_layer_param(this->layer_param_);
   SoftmaxParameter* softmax_param = softmax_layer_param.mutable_softmax_param();
+#if 0
   softmax_param->set_axis(this->layer_param_.infogain_loss_param().axis());
+#else
+  softmax_param->set_axis(this->infogain_axis_);
+#endif
   softmax_layer_param.set_type("Softmax");
   softmax_layer_param.clear_loss_weight();
   softmax_layer_param.add_loss_weight(1);
@@ -52,9 +56,15 @@ void InfogainLossLayer<Dtype>::Reshape(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
   LossLayer<Dtype>::Reshape(bottom, top);
   softmax_layer_->Reshape(softmax_bottom_vec_, softmax_top_vec_);
+#if 0
   infogain_axis_ =
     bottom[0]->CanonicalAxisIndex(
       this->layer_param_.infogain_loss_param().axis());
+#else
+  infogain_axis_ =
+    bottom[0]->CanonicalAxisIndex(
+      this->infogain_axis_);
+#endif
   outer_num_ = bottom[0]->count(0, infogain_axis_);
   inner_num_ = bottom[0]->count(infogain_axis_ + 1);
   CHECK_EQ(outer_num_ * inner_num_, bottom[1]->count())
