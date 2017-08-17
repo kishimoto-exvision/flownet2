@@ -2,7 +2,8 @@
 
 #include <stdint.h>
 #include <leveldb/db.h>
-#include <pthread.h>
+//#include <pthread.h>
+#include <boost/thread.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include <fstream>  // NOLINT(readability/streams)
@@ -652,13 +653,15 @@ void CustomDataLayer<Dtype>::CreatePrefetchThread() {
     prefetch_rng_.reset();
   }
   // Create the thread.
-  CHECK(!pthread_create(&thread_, NULL, CustomDataLayerPrefetch<Dtype>,
-        static_cast<void*>(this))) << "Pthread execution failed.";
+  //CHECK(!pthread_create(&thread_, NULL, CustomDataLayerPrefetch<Dtype>,
+  //      static_cast<void*>(this))) << "Pthread execution failed.";
+  thread_ = boost::thread(&CustomDataLayerPrefetch<Dtype>, this);
 }
 
 template <typename Dtype>
 void CustomDataLayer<Dtype>::JoinPrefetchThread() {
-  CHECK(!pthread_join(thread_, NULL)) << "Pthread joining failed.";
+  //CHECK(!pthread_join(thread_, NULL)) << "Pthread joining failed.";
+  thread_.join();
 }
 
 template <typename Dtype>

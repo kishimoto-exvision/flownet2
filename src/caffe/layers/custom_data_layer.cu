@@ -2,7 +2,8 @@
 
 #include <stdint.h>
 #include <leveldb/db.h>
-#include <pthread.h>
+//#include <pthread.h>
+#include <boost/thread.hpp>
 
 #include <string>
 #include <vector>
