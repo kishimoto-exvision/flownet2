@@ -17,29 +17,31 @@
 #include "caffe/util/math_functions.hpp"
 #include "caffe/util/upgrade_proto.hpp"
 
-#include "caffe/test/test_caffe_main.hpp"
-
 namespace caffe {
 
 template <typename Dtype>
-Net<Dtype>::Net(const NetParameter& param, const Net* root_net)
-    : root_net_(root_net) {
+Net<Dtype>::Net(const NetParameter& param) {
   Init(param);
 }
 
 template <typename Dtype>
-Net<Dtype>::Net(const string& param_file, Phase phase, const Net* root_net)
-    : root_net_(root_net) {
+Net<Dtype>::Net(const string& param_file, Phase phase,
+    const int level, const vector<string>* stages) {
   NetParameter param;
   ReadNetParamsFromTextFileOrDie(param_file, &param);
+  // Set phase, stages and level
   param.mutable_state()->set_phase(phase);
+  if (stages != NULL) {
+    for (int i = 0; i < stages->size(); i++) {
+      param.mutable_state()->add_stage((*stages)[i]);
+    }
+  }
+  param.mutable_state()->set_level(level);
   Init(param);
 }
 
 template <typename Dtype>
 void Net<Dtype>::Init(const NetParameter& in_param) {
-  CHECK(Caffe::root_solver() || root_net_)
-      << "root_net_ needs to be set for all non-root solvers";
   // Set phase from the state.
   phase_ = in_param.state().phase();
   // Filter layers based on their include/exclude rules and
@@ -64,10 +66,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   param_id_vecs_.resize(param.layer_size());
   top_id_vecs_.resize(param.layer_size());
   bottom_need_backward_.resize(param.layer_size());
-    for (int layer_id = 0; layer_id < param.layer_size(); ++layer_id) {
-    // For non-root solvers, whether this layer is shared from root_net_.
-    bool share_from_root = !Caffe::root_solver()
-        && root_net_->layers_[layer_id]->ShareInParallel();
+  for (int layer_id = 0; layer_id < param.layer_size(); ++layer_id) {
     // Inherit phase from net if unset.
     if (!param.layer(layer_id).has_phase()) {
       param.mutable_layer(layer_id)->set_phase(phase_);
@@ -80,15 +79,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
           << "propagate_down param must be specified "
           << "either 0 or bottom_size times ";
     }
-    if (share_from_root) {
-      LOG(INFO) << "Sharing layer " << layer_param.name() << " from root net";
-      layers_.push_back(root_net_->layers_[layer_id]);
-      layers_[layer_id]->SetShared(true);
-    } else {
-      layers_.push_back(LayerRegistry<Dtype>::CreateLayer(layer_param));
-      Layer<Dtype>* layer = layers_[layer_id].get();
-      layer->SetNet(this);
-    }
+    layers_.push_back(LayerRegistry<Dtype>::CreateLayer(layer_param));
     layer_names_.push_back(layer_param.name());
     LOG_IF(INFO, Caffe::root_solver())
         << "Creating Layer " << layer_param.name();
@@ -102,7 +93,6 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       // If a blob needs backward, this layer should provide it.
       need_backward |= blob_need_backward_[blob_id];
     }
-//     LOG(INFO) << "DEBUG: need_backward = " << need_backward;
     int num_top = layer_param.top_size();
     for (int top_id = 0; top_id < num_top; ++top_id) {
       AppendTop(param, layer_id, top_id, &available_blobs, &blob_name_to_idx);
@@ -117,7 +107,6 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     // specified fewer than the required number (as specified by
     // ExactNumTopBlobs() or MinTopBlobs()), allocate them here.
     Layer<Dtype>* layer = layers_[layer_id].get();
-
     if (layer->AutoTopBlobs()) {
       const int needed_num_top =
           std::max(layer->MinTopBlobs(), layer->ExactNumTopBlobs());
@@ -129,19 +118,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
       }
     }
     // After this layer is connected, set it up.
-    if (share_from_root) {
-      // Set up size of top blobs using root_net_
-      const vector<Blob<Dtype>*>& base_top = root_net_->top_vecs_[layer_id];
-      const vector<Blob<Dtype>*>& this_top = this->top_vecs_[layer_id];
-      for (int top_id = 0; top_id < base_top.size(); ++top_id) {
-        this_top[top_id]->ReshapeLike(*base_top[top_id]);
-        LOG(INFO) << "Created top blob " << top_id << " (shape: "
-            << this_top[top_id]->shape_string() <<  ") for shared layer "
-            << layer_param.name();
-      }
-    } else {
-      layers_[layer_id]->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
-    }
+    layers_[layer_id]->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
     LOG_IF(INFO, Caffe::root_solver())
         << "Setting up " << layer_names_[layer_id];
     for (int top_id = 0; top_id < top_vecs_[layer_id].size(); ++top_id) {
@@ -167,11 +144,7 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
       const ParamSpec* param_spec = (param_id < param_size) ?
           &layer_param.param(param_id) : &default_param_spec;
-      bool param_need_backward = param_spec->lr_mult() != 0;
-      
-      if (!layer->AllowBackward())
-        param_need_backward = false;
-      
+      const bool param_need_backward = param_spec->lr_mult() != 0;
       need_backward |= param_need_backward;
       layers_[layer_id]->set_param_propagate_down(param_id,
                                                   param_need_backward);
@@ -179,9 +152,6 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
     for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
       AppendParam(param, layer_id, param_id);
     }
-    if (!layer->AllowBackward())
-        need_backward = false;
-    LOG(INFO) << "DEBUG: need_backward = " << need_backward;
     // Finally, set the backward flag
     layer_need_backward_.push_back(need_backward);
     if (need_backward) {
@@ -548,10 +518,15 @@ Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
   CHECK_LT(end, layers_.size());
   Dtype loss = 0;
   for (int i = start; i <= end; ++i) {
-    // LOG(ERROR) << "Forwarding " << layer_names_[i];
+    for (int c = 0; c < before_forward_.size(); ++c) {
+      before_forward_[c]->run(i);
+    }
     Dtype layer_loss = layers_[i]->Forward(bottom_vecs_[i], top_vecs_[i]);
     loss += layer_loss;
     if (debug_info_) { ForwardDebugInfo(i); }
+    for (int c = 0; c < after_forward_.size(); ++c) {
+      after_forward_[c]->run(i);
+    }
   }
   return loss;
 }
@@ -593,10 +568,16 @@ void Net<Dtype>::BackwardFromTo(int start, int end) {
   CHECK_GE(end, 0);
   CHECK_LT(start, layers_.size());
   for (int i = start; i >= end; --i) {
+    for (int c = 0; c < before_backward_.size(); ++c) {
+      before_backward_[c]->run(i);
+    }
     if (layer_need_backward_[i]) {
       layers_[i]->Backward(
           top_vecs_[i], bottom_need_backward_[i], bottom_vecs_[i]);
       if (debug_info_) { BackwardDebugInfo(i); }
+    }
+    for (int c = 0; c < after_backward_.size(); ++c) {
+      after_backward_[c]->run(i);
     }
   }
 }
@@ -766,45 +747,29 @@ void Net<Dtype>::CopyTrainedLayersFrom(const NetParameter& param) {
     DLOG(INFO) << "Copying source layer " << source_layer_name;
     vector<shared_ptr<Blob<Dtype> > >& target_blobs =
         layers_[target_layer_id]->blobs();
-    if( layers_[target_layer_id]->DoesUseCustomCopyBlobs() ) {
-        vector<Blob<float>* > blobs;
-        for(int i=0; i<source_layer.blobs().size(); i++)
-        {
-            Blob<float>* blob = new Blob<float>();
-            blob->FromProto(source_layer.blobs(i));
-            blobs.push_back(blob);
-        }
-        layers_[target_layer_id]->CustomCopyBlobs(blobs);
-
-        for(int i=0; i<blobs.size(); i++)
-            delete blobs[i];
-    } else {
-      CHECK_EQ(target_blobs.size(), source_layer.blobs_size())
-          << "Incompatible number of blobs for layer " << source_layer_name;
-      for (int j = 0; j < target_blobs.size(); ++j) {
-        if (!target_blobs[j]->ShapeEquals(source_layer.blobs(j))) {
-          Blob<Dtype> source_blob;
-          const bool kReshape = true;
-          source_blob.FromProto(source_layer.blobs(j), kReshape);
-          LOG(FATAL) << "Cannot copy param " << j << " weights from layer '"
-              << source_layer_name << "'; shape mismatch.  Source param shape is "
-              << source_blob.shape_string() << "; target param shape is "
-              << target_blobs[j]->shape_string() << ". "
-              << "To learn this layer's parameters from scratch rather than "
-              << "copying from a saved net, rename the layer.";
-        }
-        const bool kReshape = false;
-        target_blobs[j]->FromProto(source_layer.blobs(j), kReshape);
+    CHECK_EQ(target_blobs.size(), source_layer.blobs_size())
+        << "Incompatible number of blobs for layer " << source_layer_name;
+    for (int j = 0; j < target_blobs.size(); ++j) {
+      if (!target_blobs[j]->ShapeEquals(source_layer.blobs(j))) {
+        Blob<Dtype> source_blob;
+        const bool kReshape = true;
+        source_blob.FromProto(source_layer.blobs(j), kReshape);
+        LOG(FATAL) << "Cannot copy param " << j << " weights from layer '"
+            << source_layer_name << "'; shape mismatch.  Source param shape is "
+            << source_blob.shape_string() << "; target param shape is "
+            << target_blobs[j]->shape_string() << ". "
+            << "To learn this layer's parameters from scratch rather than "
+            << "copying from a saved net, rename the layer.";
       }
-
+      const bool kReshape = false;
+      target_blobs[j]->FromProto(source_layer.blobs(j), kReshape);
     }
   }
 }
 
 template <typename Dtype>
 void Net<Dtype>::CopyTrainedLayersFrom(const string trained_filename) {
-  if (trained_filename.size() >= 3 &&
-      trained_filename.compare(trained_filename.size() - 3, 3, ".h5") == 0) {
+  if (H5Fis_hdf5(trained_filename.c_str())) {
     CopyTrainedLayersFromHDF5(trained_filename);
   } else {
     CopyTrainedLayersFromBinaryProto(trained_filename);
