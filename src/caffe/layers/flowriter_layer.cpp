@@ -121,7 +121,7 @@ void FLOWriterLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
 }
 
 #ifdef CPU_ONLY
-STUB_GPU_FORWARD(FLOWriterLayer, Forward);
+STUB_GPU(FLOWriterLayer);
 #endif
 
 INSTANTIATE_CLASS(FLOWriterLayer);

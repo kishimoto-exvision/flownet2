@@ -142,11 +142,10 @@ void PFMWriterLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
 }
 
 #ifdef CPU_ONLY
-STUB_GPU_FORWARD(PFMWriterLayer, Forward);
+STUB_GPU(PFMWriterLayer);
 #endif
 
 INSTANTIATE_CLASS(PFMWriterLayer);
 REGISTER_LAYER_CLASS(PFMWriter);
-
 
 }  // namespace caffe

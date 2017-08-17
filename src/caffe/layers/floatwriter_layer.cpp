@@ -112,11 +112,10 @@ void FloatWriterLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
 }
 
 #ifdef CPU_ONLY
-STUB_GPU_FORWARD(FloatWriterLayer, Forward);
+STUB_GPU(FloatWriterLayer);
 #endif
 
 INSTANTIATE_CLASS(FloatWriterLayer);
 REGISTER_LAYER_CLASS(FloatWriter);
-
 
 }  // namespace caffe
