@@ -23,7 +23,9 @@
 #include <iostream>
 #include <fstream>
 #include <omp.h>
+#ifndef _MSC_VER
 #include <sys/dir.h>
+#endif
 
 
 using std::max;
@@ -105,6 +107,11 @@ void FLOWriterLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     }
 }
 
+template <typename Dtype>
+void FLOWriterLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
+    const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom)
+{
+}
 
 #ifdef CPU_ONLY
 STUB_GPU_FORWARD(FLOWriterLayer, Forward);

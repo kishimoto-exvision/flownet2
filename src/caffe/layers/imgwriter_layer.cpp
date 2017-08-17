@@ -23,7 +23,9 @@
 #include <iostream>
 #include <fstream>
 #include <omp.h>
+#ifndef _MSC_VER
 #include <sys/dir.h>
+#endif
 
 using std::max;
 
@@ -141,6 +143,12 @@ void ImgWriterLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
                 writePPM(filename,(const float*)data,width,height,true,this->layer_param().writer_param().scale());
         }
     }
+}
+
+template <typename Dtype>
+void ImgWriterLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
+    const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom)
+{
 }
 
 #ifdef CPU_ONLY

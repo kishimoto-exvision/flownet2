@@ -26,7 +26,9 @@ using namespace cimg_library;
 #include <iostream>
 #include <fstream>
 #include <omp.h>
+#ifndef _MSC_VER
 #include <sys/dir.h>
+#endif
 
 using std::max;
 
@@ -125,6 +127,12 @@ void PFMWriterLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
         LOG(INFO) << "Saving " << filename;
         writePFMFile(filename,(const float*)data,width,height,channels);
     }
+}
+
+template <typename Dtype>
+void PFMWriterLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
+    const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom)
+{
 }
 
 #ifdef CPU_ONLY

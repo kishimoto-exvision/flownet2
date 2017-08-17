@@ -23,7 +23,9 @@
 #include <iostream>
 #include <fstream>
 #include <omp.h>
+#ifndef _MSC_VER
 #include <sys/dir.h>
+#endif
 
 using std::max;
 
