@@ -1,3 +1,8 @@
+#if defined(_MSC_VER)
+#include <process.h>
+#define getpid() _getpid()
+#endif
+
 #include <boost/thread.hpp>
 #include <glog/logging.h>
 #include <cmath>
@@ -8,15 +13,6 @@
 #include "caffe/util/rng.hpp"
 
 namespace caffe {
-
-void Caffe::set_logging(bool value)
-{
-    FLAGS_logtostderr = value ? 1 : 0;
-    FLAGS_alsologtostderr = FLAGS_logtostderr;
-
-    if(!value) FLAGS_minloglevel=2;
-    else       FLAGS_minloglevel=0;
-}
 
 // Make sure each thread can have different values.
 static boost::thread_specific_ptr<Caffe> thread_instance_;
@@ -55,14 +51,18 @@ void GlobalInit(int* pargc, char*** pargv) {
   // Google logging.
   ::google::InitGoogleLogging(*(pargv)[0]);
   // Provide a backtrace on segfault.
+
+  // Windows port of glogs doesn't have this function built
+#if !defined(_MSC_VER)
   ::google::InstallFailureSignalHandler();
+#endif
 }
 
 #ifdef CPU_ONLY  // CPU-only Caffe.
 
 Caffe::Caffe()
     : random_generator_(), mode_(Caffe::CPU),
-      solver_count_(1), root_solver_(true) { }
+      solver_count_(1), solver_rank_(0), multiprocess_(false) { }
 
 Caffe::~Caffe() { }
 
@@ -115,7 +115,8 @@ void* Caffe::RNG::generator() {
 
 Caffe::Caffe()
     : cublas_handle_(NULL), curand_generator_(NULL), random_generator_(),
-    mode_(Caffe::CPU), solver_count_(1), root_solver_(true) {
+    mode_(Caffe::CPU),
+    solver_count_(1), solver_rank_(0), multiprocess_(false) {
   // Try to create a cublas handler, and report an error if failed (but we will
   // keep the program running as one might just want to run CPU code).
   if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {

@@ -256,9 +256,12 @@ void FlowWarpLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
 //    }
 }
 
+#ifdef CPU_ONLY
+STUB_GPU(FlowWarpLayer);
+#endif
+
 INSTANTIATE_CLASS(FlowWarpLayer);
 REGISTER_LAYER_CLASS(FlowWarp);
-
 
 }  // namespace caffe
 

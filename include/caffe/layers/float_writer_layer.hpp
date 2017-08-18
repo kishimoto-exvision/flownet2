@@ -27,7 +27,7 @@ class FloatWriterLayer : public Layer<Dtype> {
   virtual inline const char* type() const { return "FloatWriter"; }
   virtual inline int ExactNumBottomBlobs() const { return 1; }
   virtual inline bool AllowInactive() const { return false; }
- protected:
+protected:
 
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);

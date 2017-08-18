@@ -26,8 +26,8 @@ namespace caffe {
         this->layer_param_.lpq_loss_param().q();
       /// Special case: If one of each p and q is given, it's okay to not 
       /// specify a start frame
-      if (start_iters.size() == 0 and
-          ps.size() == 1 and
+      if (start_iters.size() == 0 &&
+          ps.size() == 1 &&
           qs.size() == 1)
       {
         schedule_.push(new ScheduleStep_(0, ps.Get(0), qs.Get(0)));
@@ -38,7 +38,7 @@ namespace caffe {
       else
       {
         /// Ensure that all three vectors are the same size...
-        if (start_iters.size() != ps.size() or  ps.size() != qs.size()) {
+        if (start_iters.size() != ps.size() || ps.size() != qs.size()) {
           LOG(FATAL) << "Incompatible sizes: ("
                     << "pq_episode_starts_at_iter -> " 
                     << start_iters.size() << ", "

@@ -26,7 +26,11 @@ using namespace cimg_library;
 #include <iostream>
 #include <fstream>
 #include <omp.h>
+#ifndef _MSC_VER
 #include <sys/dir.h>
+#else
+#include "dirent.h"
+#endif
 
 using std::max;
 
@@ -91,9 +95,13 @@ void PFMWriterLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     const int channels = bottom[0]->channels();
     const int height = bottom[0]->height();
     const int width = bottom[0]->width();
-    
+
+#if 0
     Net<Dtype> *net = this->GetNet();
     int iter = net->iter();
+#else
+    int iter = -1;
+#endif
 
     int size=height*width*channels;
     for(int n=0; n<num; n++)
@@ -133,6 +141,5 @@ STUB_GPU_FORWARD(PFMWriterLayer, Forward);
 
 INSTANTIATE_CLASS(PFMWriterLayer);
 REGISTER_LAYER_CLASS(PFMWriter);
-
 
 }  // namespace caffe

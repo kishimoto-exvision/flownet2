@@ -175,8 +175,9 @@ void DataAugmentationLayer<Dtype>::adjust_blobs(vector<Blob<Dtype>* > blobs)
       {
              // If using RGB mean, copy only RGB values (blob 2)
              Blob<Dtype> tmp; tmp.CopyFrom(*blobs[2], false,true);
+#ifndef CPU_ONLY
              caffe_gpu_memcpy(this->blobs_[2]->count()*sizeof(float), tmp.mutable_gpu_data(), this->blobs_[2]->mutable_gpu_data());
-
+#endif
              Dtype* data_mean_per_channel_cpu = this->blobs_[2]->mutable_cpu_data();
              for(int i=0; i<this->blobs_[2]->count(); i++)
                  LOG(INFO) << "recovered mean value " << data_mean_per_channel_cpu[i];

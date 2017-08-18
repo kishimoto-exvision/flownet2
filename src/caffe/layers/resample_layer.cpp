@@ -68,6 +68,10 @@ void ResampleLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
   LOG(FATAL) << "ResampleLayer cannot do backward.";
 }
 
+#ifdef CPU_ONLY
+STUB_GPU(ResampleLayer);
+#endif
+
 INSTANTIATE_CLASS(ResampleLayer);
 REGISTER_LAYER_CLASS(Resample);
 
