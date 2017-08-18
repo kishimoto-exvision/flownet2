@@ -212,12 +212,6 @@ void DataAugmentationLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& botto
    	LOG(FATAL) << "Forward CPU Augmentation not implemented.";
 }
 
-template <typename Dtype>
-void DataAugmentationLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
-    const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
-    for (int i = 0; i<propagate_down.size(); i++) if (propagate_down[i]) LOG(FATAL) << "DataAugmentationLayer cannot do backward."; return;
-}
-
 #ifdef CPU_ONLY
 STUB_GPU(DataAugmentationLayer);
 #endif

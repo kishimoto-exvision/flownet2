@@ -151,14 +151,8 @@ void ImgWriterLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     }
 }
 
-template <typename Dtype>
-void ImgWriterLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
-    const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom)
-{
-}
-
 #ifdef CPU_ONLY
-STUB_GPU(ImgWriterLayer);
+STUB_GPU_FORWARD(ImgWriterLayer, Forward);
 #endif
 
 INSTANTIATE_CLASS(ImgWriterLayer);
