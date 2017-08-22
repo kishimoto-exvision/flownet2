@@ -39,6 +39,11 @@
 #include "thirdparty/CImg/CImg.h"
 using namespace cimg_library;
 
+#if defined(_MSC_VER)
+#include <direct.h>
+#define mkdir(X, Y) _mkdir(X)
+#endif
+
 #include <iostream>
 using namespace std;
 
