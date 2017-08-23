@@ -92,11 +92,11 @@ if DEFINED APPVEYOR (
     :: If python is on your path leave this alone
     if NOT DEFINED PYTHON_EXE set PYTHON_EXE=python
     :: Run the tests
-    if NOT DEFINED RUN_TESTS set RUN_TESTS=0
+    if NOT DEFINED RUN_TESTS set RUN_TESTS=1
     :: Run lint
     if NOT DEFINED RUN_LINT set RUN_LINT=0
     :: Build the install target
-    if NOT DEFINED RUN_INSTALL set RUN_INSTALL=0
+    if NOT DEFINED RUN_INSTALL set RUN_INSTALL=1
 )
 
 :: Set the appropriate CMake generator
